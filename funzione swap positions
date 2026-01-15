@@ -1,0 +1,35 @@
+def swap_consecutive(s: pd.Series) -> pd.Series:
+    """
+    Swaps each pair of consecutive values in a Pandas Series.
+    If the Series has an odd number of elements, the last element remains unchanged.
+
+    >>> s = pd.Series([1, 2, 3, 4, 5])
+    >>> swap_consecutive(s).tolist()
+    [2, 1, 4, 3, 5]
+    
+    >>> s2 = pd.Series(['a', 'b', 'c', 'd'])
+    >>> swap_consecutive(s2).tolist()
+    ['b', 'a', 'd', 'c']
+    """
+    # Creiamo una copia per non modificare l'originale
+    result = s.copy()
+    
+    # Identifichiamo gli indici per le coppie
+    # Esempio per s = [1, 2, 3, 4, 5]
+    # evens (pari): [0, 2]
+    # odds (dispari): [1, 3]
+    n = len(s)
+    evens = range(0, n - 1, 2)
+    odds = range(1, n, 2)
+    
+    # Usiamo .iloc per lo scambio basato sulla posizione
+    # Assegniamo i valori delle posizioni pari alle posizioni dispari e viceversa
+    result.iloc[evens] = s.iloc[odds].values
+    result.iloc[odds] = s.iloc[evens].values
+    
+    return result
+
+# Per eseguire i test definiti nella docstring
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
