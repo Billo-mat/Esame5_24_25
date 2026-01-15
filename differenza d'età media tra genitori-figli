@@ -1,0 +1,17 @@
+# 1. Filtriamo il DataFrame per escludere i casi in cui non è stato trovato un genitore (-1)
+# Creiamo una copia per evitare il SettingWithCopyWarning
+valid_df = df[df['parent'] != -1].copy()
+
+# 2. Recuperiamo l'età dei genitori in modo vettorializzato.
+# Usiamo df.loc[valid_df['parent'], 'age'] per ottenere le età corrispondenti agli indici dei genitori.
+# Usiamo .values per ottenere un array NumPy ed evitare che Pandas provi ad allineare
+# gli indici (dato che l'indice del genitore è diverso da quello del figlio).
+parent_ages = df.loc[valid_df['parent'], 'age'].values
+
+# 3. Calcoliamo la differenza tra l'età del genitore e l'età del figlio
+age_differences = parent_ages - valid_df['age']
+
+# 4. Calcoliamo la media
+average_age_diff = age_differences.mean()
+
+print(f"La differenza media di età tra genitore e figlio è: {average_age_diff:.2f} anni")
