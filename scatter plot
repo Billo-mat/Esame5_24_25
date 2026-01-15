@@ -1,0 +1,19 @@
+# 1. Prepariamo i dati (come fatto nell'Esercizio 3)
+# Filtriamo chi ha un genitore valido
+valid_mask = df['parent'] != -1
+children_ages = df.loc[valid_mask, 'age']
+# Recuperiamo le età dei genitori usando gli indici salvati nella colonna 'parent'
+parent_ages = df.loc[df.loc[valid_mask, 'parent'], 'age'].values
+
+# 2. Creazione del grafico
+plt.figure(figsize=(10, 6))
+plt.scatter(children_ages, parent_ages, alpha=0.6, edgecolors='w')
+
+# 3. Formattazione e Label
+plt.title('Relationship between Child Age and Parent Age')
+plt.xlabel('Age of the Child')
+plt.ylabel('Age of the Parent')
+plt.grid(True, linestyle='--', alpha=0.7)
+
+# Visualizzazione
+plt.show()
