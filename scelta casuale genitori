@@ -1,0 +1,13 @@
+def find_parent(child_age, df):
+    # 1. Filtra il dataframe per trovare i candidati
+    candidates = df[(df['age'] >= child_age + 15) & (df['age'] <= child_age + 50)]
+    
+    # 2. Se ci sono candidati, scegline uno a caso e restituisci l'indice
+    if not candidates.empty:
+        return np.random.choice(candidates.index)
+    
+    # 3. Altrimenti restituisci -1
+    return -1
+
+# Applica la funzione a ogni riga
+df['parent'] = df['age'].apply(lambda x: find_parent(x, df))
