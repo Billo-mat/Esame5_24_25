@@ -1,0 +1,35 @@
+# 1. Identifichiamo le righe con genitori validi
+valid_mask = df['parent'] != -1
+valid_df = df[valid_mask].copy()
+
+# 2. Recuperiamo il sesso e l'altezza dei genitori
+# Usiamo .values per evitare problemi di allineamento degli indici
+valid_df['parent_male'] = df.loc[valid_df['parent'], 'male'].values
+valid_df['parent_height'] = df.loc[valid_df['parent'], 'height'].values
+
+# 3. Filtriamo solo chi ha lo stesso sesso del genitore
+same_sex_df = valid_df[valid_df['male'] == valid_df['parent_male']].copy()
+
+# 4. Dividiamo per sesso per il plotting
+males = same_sex_df[same_sex_df['male'] == 1]
+females = same_sex_df[same_sex_df['male'] == 0]
+
+# 5. Creazione del grafico
+plt.figure(figsize=(10, 7))
+
+# Plot Maschi
+plt.scatter(males['parent_height'], males['height'], 
+            color='blue', label='Father-Son', alpha=0.6)
+
+# Plot Femmine
+plt.scatter(females['parent_height'], females['height'], 
+            color='red', label='Mother-Daughter', alpha=0.6)
+
+# Label e Legenda
+plt.title('Height Correlation: Parent vs Child (Same Sex Only)')
+plt.xlabel("Parent's Height (cm)")
+plt.ylabel("Child's Height (cm)")
+plt.legend()
+plt.grid(True, linestyle=':', alpha=0.6)
+
+plt.show()
