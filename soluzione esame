@@ -1,0 +1,186 @@
+import pandas as pd
+import numpy as np
+import pymc as pm
+import arviz as az
+import matplotlib.pyplot as plt
+
+
+# Read the CSV file into a DataFrame
+df = pd.read_csv('Howell1.csv', sep = ";")
+
+# Display the first few rows to verify the data
+print(df.head())
+
+def find_parent(child_age, df):
+    # 1. Filtra il dataframe per trovare i candidati
+    candidates = df[(df['age'] >= child_age + 15) & (df['age'] <= child_age + 50)]
+    
+    # 2. Se ci sono candidati, scegline uno a caso e restituisci l'indice
+    if not candidates.empty:
+        return np.random.choice(candidates.index)
+    
+    # 3. Altrimenti restituisci -1
+    return -1
+
+# Applica la funzione a ogni riga
+df['parent'] = df['age'].apply(lambda x: find_parent(x, df))
+
+# 1. Filtriamo il DataFrame per escludere i casi in cui non è stato trovato un genitore (-1)
+# Creiamo una copia per evitare il SettingWithCopyWarning
+valid_df = df[df['parent'] != -1].copy()
+
+# 2. Recuperiamo l'età dei genitori in modo vettorializzato.
+# Usiamo df.loc[valid_df['parent'], 'age'] per ottenere le età corrispondenti agli indici dei genitori.
+# Usiamo .values per ottenere un array NumPy ed evitare che Pandas provi ad allineare
+# gli indici (dato che l'indice del genitore è diverso da quello del figlio).
+parent_ages = df.loc[valid_df['parent'], 'age'].values
+
+# 3. Calcoliamo la differenza tra l'età del genitore e l'età del figlio
+age_differences = parent_ages - valid_df['age']
+
+# 4. Calcoliamo la media
+average_age_diff = age_differences.mean()
+
+print(f"La differenza media di età tra genitore e figlio è: {average_age_diff:.2f} anni")
+
+
+def swap_consecutive(s: pd.Series) -> pd.Series:
+    """
+    Swaps each pair of consecutive values in a Pandas Series.
+    If the Series has an odd number of elements, the last element remains unchanged.
+
+    >>> s = pd.Series([1, 2, 3, 4, 5])
+    >>> swap_consecutive(s).tolist()
+    [2, 1, 4, 3, 5]
+    
+    >>> s2 = pd.Series(['a', 'b', 'c', 'd'])
+    >>> swap_consecutive(s2).tolist()
+    ['b', 'a', 'd', 'c']
+    """
+    # Creiamo una copia per non modificare l'originale
+    result = s.copy()
+    
+    # Identifichiamo gli indici per le coppie
+    # Esempio per s = [1, 2, 3, 4, 5]
+    # evens (pari): [0, 2]
+    # odds (dispari): [1, 3]
+    n = len(s)
+    evens = range(0, n - 1, 2)
+    odds = range(1, n, 2)
+    
+    # Usiamo .iloc per lo scambio basato sulla posizione
+    # Assegniamo i valori delle posizioni pari alle posizioni dispari e viceversa
+    result.iloc[evens] = s.iloc[odds].values
+    result.iloc[odds] = s.iloc[evens].values
+    
+    return result
+
+# Per eseguire i test definiti nella docstring
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+
+
+# 1. Prepariamo i dati (come fatto nell'Esercizio 3)
+# Filtriamo chi ha un genitore valido
+valid_mask = df['parent'] != -1
+children_ages = df.loc[valid_mask, 'age']
+# Recuperiamo le età dei genitori usando gli indici salvati nella colonna 'parent'
+parent_ages = df.loc[df.loc[valid_mask, 'parent'], 'age'].values
+
+# 2. Creazione del grafico
+plt.figure(figsize=(10, 6))
+plt.scatter(children_ages, parent_ages, alpha=0.6, edgecolors='w')
+
+# 3. Formattazione e Label
+plt.title('Relationship between Child Age and Parent Age')
+plt.xlabel('Age of the Child')
+plt.ylabel('Age of the Parent')
+plt.grid(True, linestyle='--', alpha=0.7)
+
+# Visualizzazione
+plt.show()
+
+
+# 1. Identifichiamo le righe con genitori validi
+valid_mask = df['parent'] != -1
+valid_df = df[valid_mask].copy()
+
+# 2. Recuperiamo il sesso e l'altezza dei genitori
+# Usiamo .values per evitare problemi di allineamento degli indici
+valid_df['parent_male'] = df.loc[valid_df['parent'], 'male'].values
+valid_df['parent_height'] = df.loc[valid_df['parent'], 'height'].values
+
+# 3. Filtriamo solo chi ha lo stesso sesso del genitore
+same_sex_df = valid_df[valid_df['male'] == valid_df['parent_male']].copy()
+
+# 4. Dividiamo per sesso per il plotting
+males = same_sex_df[same_sex_df['male'] == 1]
+females = same_sex_df[same_sex_df['male'] == 0]
+
+# 5. Creazione del grafico
+plt.figure(figsize=(10, 7))
+
+# Plot Maschi
+plt.scatter(males['parent_height'], males['height'], 
+            color='blue', label='Father-Son', alpha=0.6)
+
+# Plot Femmine
+plt.scatter(females['parent_height'], females['height'], 
+            color='red', label='Mother-Daughter', alpha=0.6)
+
+# Label e Legenda
+plt.title('Height Correlation: Parent vs Child (Same Sex Only)')
+plt.xlabel("Parent's Height (cm)")
+plt.ylabel("Child's Height (cm)")
+plt.legend()
+plt.grid(True, linestyle=':', alpha=0.6)
+
+plt.show()
+
+# 1. Usiamo groupby sulla colonna 'parent' e contiamo le occorrenze
+# 'transform' restituisce una colonna della stessa lunghezza dell'originale
+parent_counts = df.groupby('parent')['parent'].transform('count')  #nella riga parents c'è l'indice del genitore: raggruppo e per ogni indice (e quindi individuo), conto quanti figli ha
+
+# 2. Il numero di fratelli è il conteggio totale meno l'individuo stesso
+df['siblings'] = parent_counts - 1
+
+# Verifichiamo il risultato per i primi individui
+print(df[['parent', 'siblings']].head())
+
+
+# 1. Preparazione dati (solo individui con genitore diverso da -1)
+valid_data = df[df['parent'] != -1].copy()
+# Recuperiamo l'altezza del genitore
+valid_data['parent_height'] = df.loc[valid_data['parent'], 'height'].values
+
+# Variabili osservate
+h_child = valid_data['height'].values
+h_parent = valid_data['parent_height'].values
+
+# 2. Definizione del modello PyMC
+with pm.Model() as model:
+    # Priors (Distribuzioni a priori)
+    alpha = pm.Normal('alpha', mu=0, sigma=5)
+    beta = pm.Normal('beta', mu=0, sigma=5)
+    sigma = pm.Exponential('sigma', lam=1)
+    
+    # Valore atteso (media della normale)
+    mu = alpha + beta * h_parent
+    
+    # Likelihood (Verosimiglianza)
+    # Osserviamo i dati reali h_child
+    likelihood = pm.Normal('height_obs', mu=mu, sigma=sigma, observed=h_child)
+    
+    # 3. Campionamento dalla distribuzione Posterior
+    # draw_samples genera le catene tramite algoritmi MCMC (es. NUTS)
+    trace = pm.sample(1000, return_inferencedata=True)
+
+# 4. Plot delle distribuzioni Posterior
+az.plot_posterior(trace)
+plt.tight_layout()
+plt.show()
+
+# In alternativa, puoi usare plot_trace per vedere sia le distribuzioni che le catene
+az.plot_trace(trace)
+plt.show()
