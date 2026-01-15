@@ -1,0 +1,39 @@
+import pymc as pm
+import arviz as az
+import matplotlib.pyplot as plt
+
+# 1. Preparazione dati (solo individui con genitore diverso da -1)
+valid_data = df[df['parent'] != -1].copy()
+# Recuperiamo l'altezza del genitore
+valid_data['parent_height'] = df.loc[valid_data['parent'], 'height'].values
+
+# Variabili osservate
+h_child = valid_data['height'].values
+h_parent = valid_data['parent_height'].values
+
+# 2. Definizione del modello PyMC
+with pm.Model() as model:
+    # Priors (Distribuzioni a priori)
+    alpha = pm.Normal('alpha', mu=0, sigma=5)
+    beta = pm.Normal('beta', mu=0, sigma=5)
+    sigma = pm.Exponential('sigma', lam=1)
+    
+    # Valore atteso (media della normale)
+    mu = alpha + beta * h_parent
+    
+    # Likelihood (Verosimiglianza)
+    # Osserviamo i dati reali h_child
+    likelihood = pm.Normal('height_obs', mu=mu, sigma=sigma, observed=h_child)
+    
+    # 3. Campionamento dalla distribuzione Posterior
+    # draw_samples genera le catene tramite algoritmi MCMC (es. NUTS)
+    trace = pm.sample(1000, return_inferencedata=True)
+
+# 4. Plot delle distribuzioni Posterior
+az.plot_posterior(trace)
+plt.tight_layout()
+plt.show()
+
+# In alternativa, puoi usare plot_trace per vedere sia le distribuzioni che le catene
+az.plot_trace(trace)
+plt.show()
